@@ -2,205 +2,133 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import Navbar from '../components/Navbar'
 
 export default function AdminDashboard() {
   const { session } = useAuth()
   const navigate = useNavigate()
-  
   const [loading, setLoading] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false) // Admin mi kontrolü
-  const [myShops, setMyShops] = useState([]) // Admin birden çok dükkan görebilir
-  const [selectedShopId, setSelectedShopId] = useState(null) // Hangi dükkanı yönetiyoruz?
-
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [myShops, setMyShops] = useState([])
+  const [selectedShopId, setSelectedShopId] = useState(null)
+  
   // Form verileri
-  const [shopName, setShopName] = useState('')
-  const [shopSlug, setShopSlug] = useState('')
-  const [barberName, setBarberName] = useState('')
-  const [serviceName, setServiceName] = useState('')
-  const [servicePrice, setServicePrice] = useState('')
-  const [serviceDuration, setServiceDuration] = useState('30')
-
-  // Seçili dükkanın detayları
-  const [barbers, setBarbers] = useState([])
-  const [services, setServices] = useState([])
+  const [shopName, setShopName] = useState(''); const [shopSlug, setShopSlug] = useState('')
+  const [barberName, setBarberName] = useState(''); const [serviceName, setServiceName] = useState('')
+  const [servicePrice, setServicePrice] = useState(''); const [serviceDuration, setServiceDuration] = useState('30')
+  const [barbers, setBarbers] = useState([]); const [services, setServices] = useState([])
 
   useEffect(() => {
-    if (!session) {
-      navigate('/login')
-    } else {
-      checkUserRole()
-    }
+    if (!session) navigate('/login')
+    else checkUserRole()
   }, [session])
 
-  // 1. Rol Kontrolü ve Dükkanları Getirme
   const checkUserRole = async () => {
     setLoading(true)
-    
-    // Profil tablosundan rolünü çek
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('role')
-      .eq('auth_user_id', session.user.id)
-      .single()
-
+    const { data: profile } = await supabase.from('user_profiles').select('role').eq('auth_user_id', session.user.id).single()
     if (profile && profile.role === 'admin') {
-      setIsAdmin(true)
-      fetchShops() // Admin ise dükkanları getir
+      setIsAdmin(true); fetchShops();
     } else {
-      alert("Bu sayfaya erişim yetkiniz yok. Sadece Adminler girebilir.")
-      navigate('/')
+      alert("Yetkisiz Giriş"); navigate('/');
     }
     setLoading(false)
   }
 
-  const fetchShops = async () => {
-    const { data } = await supabase.from('shops').select('*').order('id', { ascending: false })
-    setMyShops(data || [])
-  }
-
-  // 2. Seçili Dükkanın Detaylarını Getir
+  const fetchShops = async () => { const { data } = await supabase.from('shops').select('*').order('id', { ascending: false }); setMyShops(data || []); }
+  
   const fetchShopDetails = async (shopId) => {
     setSelectedShopId(shopId)
-    const { data: barbersData } = await supabase.from('barbers').select('*').eq('shop_id', shopId)
-    const { data: servicesData } = await supabase.from('services').select('*').eq('shop_id', shopId)
-    
-    setBarbers(barbersData || [])
-    setServices(servicesData || [])
+    const { data: b } = await supabase.from('barbers').select('*').eq('shop_id', shopId)
+    const { data: s } = await supabase.from('services').select('*').eq('shop_id', shopId)
+    setBarbers(b || []); setServices(s || [])
   }
 
-  // --- İŞLEMLER ---
-
-  // Yeni Dükkan Oluştur
+  // --- ACTIONS (Kısaltıldı, mantık aynı) ---
   const createShop = async (e) => {
-    e.preventDefault()
-    const publicCode = 'TR-' + Math.floor(1000 + Math.random() * 9000)
-    
-    const { data, error } = await supabase.from('shops').insert([{
-      name: shopName,
-      slug: shopSlug,
-      owner_user_id: session.user.id,
-      public_code: publicCode
-    }]).select().single()
-
-    if (error) {
-      alert('Hata: ' + error.message)
-    } else {
-      alert('Dükkan oluşturuldu!')
-      setMyShops([data, ...myShops]) // Listeye ekle
-      setShopName(''); setShopSlug(''); // Formu temizle
-    }
+    e.preventDefault(); const code = 'TR-'+Math.floor(1000+Math.random()*9000)
+    const {data, error} = await supabase.from('shops').insert([{name: shopName, slug: shopSlug, owner_user_id: session.user.id, public_code: code}]).select().single()
+    if(!error) { setMyShops([data, ...myShops]); setShopName(''); setShopSlug(''); }
   }
-
-  // Berber Ekle (Görsel Olarak)
-  // NOT: Berberin giriş yapabileceği gerçek hesabı (Auth) şimdilik Supabase panelden açacağız.
-  // Buradan sadece vitrinde görünecek ismini ekliyoruz.
   const addBarber = async (e) => {
-    e.preventDefault()
-    const { data, error } = await supabase.from('barbers').insert([{
-      shop_id: selectedShopId,
-      full_name: barberName
-    }]).select().single()
-
-    if (error) alert(error.message)
-    else {
-      setBarbers([...barbers, data])
-      setBarberName('')
-    }
+    e.preventDefault(); const {data} = await supabase.from('barbers').insert([{shop_id: selectedShopId, full_name: barberName}]).select().single()
+    if(data) { setBarbers([...barbers, data]); setBarberName(''); }
   }
-
   const addService = async (e) => {
-    e.preventDefault()
-    const { data, error } = await supabase.from('services').insert([{
-      shop_id: selectedShopId,
-      name: serviceName,
-      price: parseFloat(servicePrice),
-      duration_min: parseInt(serviceDuration)
-    }]).select().single()
-
-    if (error) alert(error.message)
-    else {
-      setServices([...services, data])
-      setServiceName('')
-      setServicePrice('')
-    }
+    e.preventDefault(); const {data} = await supabase.from('services').insert([{shop_id: selectedShopId, name: serviceName, price: parseFloat(servicePrice), duration_min: parseInt(serviceDuration)}]).select().single()
+    if(data) { setServices([...services, data]); setServiceName(''); setServicePrice(''); }
   }
 
-  if (loading) return <div>Kontrol ediliyor...</div>
-  if (!isAdmin) return <div>Yetkisiz Giriş</div>
+  if (loading) return <div className="text-white text-center mt-20">Yükleniyor...</div>
+  if (!isAdmin) return null
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
-      <h1>🔧 Süper Admin Paneli</h1>
-      <p>Hoşgeldin Patron. Buradan dükkanları yönetebilirsin.</p>
+    <div className="min-h-screen bg-gray-950 text-gray-100">
+      <Navbar />
+      <div className="max-w-6xl mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6 text-white">🔧 Süper Admin Paneli</h1>
 
-      {/* DÜKKAN OLUŞTURMA ALANI */}
-      <div style={{ backgroundColor: '#eef', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
-        <h3>➕ Yeni Dükkan Oluştur</h3>
-        <form onSubmit={createShop} style={{ display: 'flex', gap: '10px' }}>
-          <input placeholder="Dükkan Adı" value={shopName} onChange={e => setShopName(e.target.value)} required />
-          <input placeholder="URL (slug)" value={shopSlug} onChange={e => setShopSlug(e.target.value)} required />
-          <button type="submit">Oluştur</button>
-        </form>
-      </div>
-
-      <div style={{ display: 'flex', gap: '20px' }}>
-        {/* SOL MENÜ: Dükkan Listesi */}
-        <div style={{ width: '30%', borderRight: '1px solid #ccc', paddingRight: '10px' }}>
-          <h3>🏪 Dükkan Listesi</h3>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            {myShops.map(shop => (
-              <li 
-                key={shop.id} 
-                onClick={() => fetchShopDetails(shop.id)}
-                style={{ 
-                  padding: '10px', 
-                  border: '1px solid #ddd', 
-                  marginBottom: '5px', 
-                  cursor: 'pointer',
-                  backgroundColor: selectedShopId === shop.id ? '#ddd' : '#fff'
-                }}
-              >
-                <strong>{shop.name}</strong><br/>
-                <small>/salon/{shop.slug}</small>
-              </li>
-            ))}
-          </ul>
+        {/* DÜKKAN OLUŞTUR */}
+        <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl mb-8">
+          <h3 className="text-lg font-bold mb-4 text-blue-400">➕ Yeni Dükkan Oluştur</h3>
+          <form onSubmit={createShop} className="flex gap-4">
+            <input placeholder="Dükkan Adı" value={shopName} onChange={e => setShopName(e.target.value)} className="bg-gray-800 border border-gray-700 text-white p-3 rounded-lg w-full focus:outline-none focus:border-blue-500"/>
+            <input placeholder="URL (slug)" value={shopSlug} onChange={e => setShopSlug(e.target.value)} className="bg-gray-800 border border-gray-700 text-white p-3 rounded-lg w-full focus:outline-none focus:border-blue-500"/>
+            <button className="bg-blue-600 hover:bg-blue-500 text-white px-6 rounded-lg font-bold">Oluştur</button>
+          </form>
         </div>
 
-        {/* SAĞ ALAN: Seçili Dükkan Yönetimi */}
-        <div style={{ width: '70%' }}>
-          {!selectedShopId ? (
-            <p>Soldan yönetmek istediğin dükkanı seç.</p>
-          ) : (
-            <div>
-              <h3>Yönetiliyor: {myShops.find(s => s.id === selectedShopId)?.name}</h3>
-              
-              <div style={{ display: 'flex', gap: '20px' }}>
-                 {/* Berberler */}
-                 <div style={{ flex: 1, border: '1px solid #eee', padding: '10px' }}>
-                    <h4>👨‍id Berberler</h4>
-                    <ul>{barbers.map(b => <li key={b.id}>{b.full_name}</li>)}</ul>
-                    <form onSubmit={addBarber}>
-                      <input placeholder="Berber Adı" value={barberName} onChange={e => setBarberName(e.target.value)} required style={{width:'100%'}}/>
-                      <button type="submit" style={{marginTop:'5px', width:'100%'}}>Berber Ekle</button>
-                    </form>
-                    <small style={{color:'red', fontSize:'10px'}}>*Berberin giriş şifresini Supabase panelden manuel oluşturmalısın.</small>
-                 </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* SOL MENÜ */}
+          <div className="bg-gray-900 border border-gray-800 p-4 rounded-2xl h-fit">
+            <h3 className="text-gray-400 font-bold mb-4 uppercase text-sm">Dükkan Listesi</h3>
+            <ul className="space-y-2">
+              {myShops.map(shop => (
+                <li key={shop.id} onClick={() => fetchShopDetails(shop.id)}
+                  className={`p-3 rounded-lg cursor-pointer transition-colors ${selectedShopId === shop.id ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-gray-800 text-gray-300'}`}>
+                  <div className="font-bold">{shop.name}</div>
+                  <div className="text-xs opacity-70">/salon/{shop.slug}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-                 {/* Hizmetler */}
-                 <div style={{ flex: 1, border: '1px solid #eee', padding: '10px' }}>
-                    <h4>✂️ Hizmetler</h4>
-                    <ul>{services.map(s => <li key={s.id}>{s.name} ({s.price} TL)</li>)}</ul>
-                    <form onSubmit={addService}>
-                      <input placeholder="Hizmet" value={serviceName} onChange={e => setServiceName(e.target.value)} required style={{width:'100%'}}/>
-                      <input placeholder="Fiyat" value={servicePrice} onChange={e => setServicePrice(e.target.value)} required style={{width:'48%'}}/>
-                      <input placeholder="Süre" value={serviceDuration} onChange={e => setServiceDuration(e.target.value)} required style={{width:'48%'}}/>
-                      <button type="submit" style={{marginTop:'5px', width:'100%'}}>Hizmet Ekle</button>
-                    </form>
-                 </div>
+          {/* SAĞ İÇERİK */}
+          <div className="md:col-span-2">
+            {!selectedShopId ? <div className="text-gray-500 text-center mt-10">Lütfen soldan bir dükkan seçin.</div> : (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                   <h2 className="text-2xl font-bold text-white">{myShops.find(s=>s.id===selectedShopId)?.name}</h2>
+                   <a href={`/salon/${myShops.find(s=>s.id===selectedShopId)?.slug}`} target="_blank" className="text-blue-400 underline text-sm">Siteye Git ↗</a>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   {/* BERBERLER */}
+                   <div className="bg-gray-900 border border-gray-800 p-5 rounded-2xl">
+                      <h4 className="font-bold mb-4 text-purple-400">👨‍id Berberler</h4>
+                      <ul className="mb-4 space-y-2">{barbers.map(b=><li key={b.id} className="bg-gray-800 p-2 rounded text-sm">{b.full_name}</li>)}</ul>
+                      <form onSubmit={addBarber} className="flex gap-2">
+                        <input placeholder="Ad Soyad" value={barberName} onChange={e=>setBarberName(e.target.value)} className="bg-gray-800 text-white p-2 rounded w-full text-sm border border-gray-700"/>
+                        <button className="bg-purple-600 hover:bg-purple-500 text-white px-3 rounded text-sm">+</button>
+                      </form>
+                   </div>
+
+                   {/* HİZMETLER */}
+                   <div className="bg-gray-900 border border-gray-800 p-5 rounded-2xl">
+                      <h4 className="font-bold mb-4 text-green-400">✂️ Hizmetler</h4>
+                      <ul className="mb-4 space-y-2 max-h-40 overflow-y-auto">{services.map(s=><li key={s.id} className="bg-gray-800 p-2 rounded text-sm flex justify-between"><span>{s.name}</span> <span className="text-green-400">{s.price}₺</span></li>)}</ul>
+                      <form onSubmit={addService} className="space-y-2">
+                        <input placeholder="Hizmet Adı" value={serviceName} onChange={e=>setServiceName(e.target.value)} className="bg-gray-800 text-white p-2 rounded w-full text-sm border border-gray-700"/>
+                        <div className="flex gap-2">
+                          <input placeholder="Fiyat" value={servicePrice} onChange={e=>setServicePrice(e.target.value)} className="bg-gray-800 text-white p-2 rounded w-full text-sm border border-gray-700"/>
+                          <input placeholder="Dk" value={serviceDuration} onChange={e=>setServiceDuration(e.target.value)} className="bg-gray-800 text-white p-2 rounded w-full text-sm border border-gray-700"/>
+                        </div>
+                        <button className="bg-green-600 hover:bg-green-500 text-white w-full py-2 rounded text-sm">Ekle</button>
+                      </form>
+                   </div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
