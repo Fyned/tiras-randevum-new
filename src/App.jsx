@@ -6,7 +6,8 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import AdminDashboard from './pages/AdminDashboard'
 import ShopPage from './pages/ShopPage'
-import ShopOwnerDashboard from './pages/ShopOwnerDashboard' // <-- YENİ EKLENDİ
+import ShopOwnerDashboard from './pages/ShopOwnerDashboard'
+import UserProfile from './pages/UserProfile' // <-- 1. BU EKLENDİ
 
 function App() {
   return (
@@ -21,8 +22,11 @@ function App() {
         {/* Süper Admin Paneli */}
         <Route path="/admin" element={<AdminDashboard />} />
 
-        {/* Dükkan Sahibi Paneli (YENİ) */}
+        {/* Dükkan Sahibi Paneli */}
         <Route path="/shop-panel" element={<ShopOwnerDashboard />} />
+
+        {/* Müşteri Profil Sayfası (YENİ) */}
+        <Route path="/profile" element={<UserProfile />} /> {/* <-- 2. BU SATIR EKLENDİ */}
 
         {/* Müşteri Vitrini (Dinamik) */}
         <Route path="/salon/:slug" element={<ShopPage />} />

@@ -1,69 +1,107 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../supabase'
+import { useNavigate } from 'react-router-dom'
 
-export default function UserSearchModal({ isOpen, onClose, onSelectUser }) {
+// Bu bileşen SADECE SALON arar
+export default function SearchModal({ isOpen, onClose }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
-    if (query.length > 2) searchUsers()
-    else setResults([])
+    if (query.length > 1) {
+      searchShops()
+    } else {
+      setResults([])
+    }
   }, [query])
 
-  const searchUsers = async () => {
+  const searchShops = async () => {
     setLoading(true)
-    // Sadece 'customer' olanları getir, zaten admin veya berber olanları listeleme
-    const { data } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('role', 'customer') 
-      .ilike('email', `%${query}%`) // E-mail'e göre ara (Supabase'de email user_profiles'da yoksa full_name ara)
-      // NOT: Eğer user_profiles'da email tutmuyorsan, full_name üzerinden ara: .ilike('full_name', `%${query}%`)
+    // SHOPS tablosunda isme göre arama
+    const { data, error } = await supabase
+      .from('shops')
+      .select('id, name, slug, address, cover_image_url')
+      .ilike('name', `%${query}%`)
       .limit(5)
     
-    // NOT: Gerçek projede auth.users tablosuna erişim kısıtlıdır. 
-    // Biz user_profiles tablosuna 'email' kolonu eklemediysek, full_name ile arama yapalım:
-    // Eğer user_profiles tablosunda email yoksa, aşağıdaki kodu .ilike('full_name', ...) yap.
-    
-    if (data) setResults(data)
+    if (!error) setResults(data)
     setLoading(false)
+  }
+
+  const handleSelect = (slug) => {
+    navigate(`/salon/${slug}`)
+    onClose()
   }
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
-          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-          
+        <div className="fixed inset-0 z-[80] flex items-start justify-center pt-24 px-4">
+          {/* Arka Plan Blur */}
           <motion.div 
-            initial={{scale:0.9, opacity:0}} animate={{scale:1, opacity:1}} exit={{scale:0.95, opacity:0}}
-            className="relative w-full max-w-md bg-[#0F172A] border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+            onClick={onClose} 
+            className="absolute inset-0 bg-black/60 backdrop-blur-md" 
+          />
+
+          {/* Arama Kutusu */}
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0, y: -20 }} 
+            animate={{ scale: 1, opacity: 1, y: 0 }} 
+            exit={{ scale: 0.95, opacity: 0, y: -20 }}
+            className="relative w-full max-w-xl bg-[#0F172A] border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
           >
             <div className="p-4 border-b border-white/10 flex items-center gap-3">
-              <span className="text-xl">👤</span>
+              <span className="text-2xl">🏢</span>
               <input 
-                autoFocus placeholder="Kullanıcı ara (Ad Soyad)..." 
-                className="bg-transparent w-full text-white outline-none placeholder-gray-500"
-                value={query} onChange={e => setQuery(e.target.value)}
+                autoFocus 
+                placeholder="Salon adı ara (Örn: Musa)..." 
+                className="bg-transparent w-full text-white text-lg outline-none placeholder-gray-500"
+                value={query} 
+                onChange={(e) => setQuery(e.target.value)}
               />
-              <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+              <button onClick={onClose} className="text-gray-400 hover:text-white px-3 py-1 rounded-full transition-colors">
+                Vazgeç
+              </button>
             </div>
 
-            <div className="max-h-60 overflow-y-auto p-2">
+            <div className="max-h-[60vh] overflow-y-auto p-2 custom-scrollbar">
               {loading && <div className="p-4 text-gray-500 text-center">Aranıyor...</div>}
-              {results.length === 0 && query.length > 2 && !loading && <div className="p-4 text-gray-500 text-center">Kullanıcı bulunamadı.</div>}
               
-              {results.map(user => (
-                <div key={user.id} onClick={() => onSelectUser(user)}
-                  className="p-3 hover:bg-white/10 rounded-xl cursor-pointer flex items-center gap-3 transition-colors group">
-                  <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-lg">👤</div>
-                  <div>
-                    <div className="text-white font-medium group-hover:text-blue-400">{user.full_name}</div>
-                    <div className="text-xs text-gray-500">Müşteri</div>
+              {!loading && results.length === 0 && query.length > 1 && (
+                <div className="p-4 text-gray-500 text-center">Salon bulunamadı.</div>
+              )}
+
+              {results.map((shop) => (
+                <div 
+                  key={shop.id} 
+                  onClick={() => handleSelect(shop.slug)}
+                  className="flex items-center p-3 hover:bg-white/10 rounded-2xl cursor-pointer transition-colors group"
+                >
+                  {/* Salon Avatarı veya İkonu */}
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-800 border border-white/10 flex-shrink-0">
+                    {shop.cover_image_url ? (
+                        <img src={shop.cover_image_url} className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xl">✂️</div>
+                    )}
                   </div>
-                  <button className="ml-auto bg-blue-600 text-xs px-3 py-1 rounded-full text-white">Seç</button>
+                  
+                  <div className="ml-4 flex-1">
+                    <h4 className="text-white font-semibold text-lg group-hover:text-blue-400 transition-colors">
+                      {shop.name}
+                    </h4>
+                    <p className="text-gray-400 text-sm truncate max-w-[200px]">
+                      {shop.address || 'Adres yok'}
+                    </p>
+                  </div>
+                  
+                  <div className="ml-auto text-gray-500 text-sm group-hover:translate-x-1 transition-transform">
+                    Git →
+                  </div>
                 </div>
               ))}
             </div>
