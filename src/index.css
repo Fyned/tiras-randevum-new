@@ -2,21 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+/* HTML ve BODY Ayarları */
 html {
   scroll-behavior: smooth;
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: transparent; /* Tıklayınca mavi kutu çıkmasını engeller */
+  overscroll-behavior-y: none; /* Sayfayı en yukarı çekince yenilemeyi engeller (App hissi) */
 }
 
 body {
   /* Derin uzay siyahı + Hafif mor/mavi ortam ışığı */
   background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 60%, #000000 100%);
-  background-attachment: fixed; /* Kaydırırken arka plan sabit kalsın */
+  background-attachment: fixed;
   color: #ffffff;
   font-family: 'Inter', sans-serif;
   min-height: 100vh;
+  
+  /* iPhone Çentik (Notch) Desteği */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  
+  /* Uygulama Hissi: Metin seçimini engelle (Inputlar hariç) */
+  user-select: none;
 }
 
-/* Tarih seçiciyi (Date Picker) koyu temaya uydurma */
+/* Input ve Textarea'larda metin seçimine izin ver */
+input, textarea {
+  user-select: text;
+  /* iPhone'da inputa tıklayınca zoom yapmasını engeller (Font 16px kuralı) */
+  font-size: 16px !important; 
+}
+
+/* Mobil Kaydırma (Momentum Scrolling) */
+.custom-scrollbar {
+  -webkit-overflow-scrolling: touch; /* Mobilde yağ gibi kayması için */
+}
+
+/* Scrollbar'ı gizle ama kaydırmaya izin ver (Daha temiz görünüm) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+/* Tarih seçici ikonu (Dark Mode uyumlu) */
 ::-webkit-calendar-picker-indicator {
     filter: invert(1);
     opacity: 0.6;

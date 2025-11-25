@@ -12,9 +12,11 @@ export default function Navbar() {
   return (
     <motion.nav 
       initial={{ y: -100 }} animate={{ y: 0 }} transition={{ type: "spring", stiffness: 100, damping: 20 }}
-      className="fixed top-4 left-0 right-0 z-50 px-4"
+      // DÜZELTME: Çentik (Notch) için güvenli alan + z-index ayarı
+      className="fixed top-0 left-0 right-0 z-[999] px-4 pt-[max(1rem,env(safe-area-inset-top))]"
     >
-      <div className="max-w-6xl mx-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-full px-6 py-3 shadow-lg shadow-black/20 flex justify-between items-center">
+      {/* Menü Kutusu - Arkası bulanık, border'lı */}
+      <div className="max-w-6xl mx-auto bg-[#0F172A]/80 backdrop-blur-xl border border-white/10 rounded-full px-6 py-3 shadow-lg shadow-black/40 flex justify-between items-center relative">
         
         <Link to="/" className="flex items-center gap-2 group">
            <img src="/logo-header.png" alt="Logo" className="h-8 md:h-10 object-contain group-hover:opacity-80 transition-opacity" />
@@ -72,7 +74,6 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
 
-              {/* PROFIL LINKI (GÜNCELLENDİ - ARTIK DAHA BELİRGİN) */}
               <Link to="/profile" className="flex items-center gap-2 border border-white/10 px-3 py-1.5 rounded-full hover:bg-white/10 transition-colors bg-white/5">
                 <span className="text-lg">👤</span>
                 <span className="text-xs text-gray-200 font-medium hidden md:block">Profilim</span>

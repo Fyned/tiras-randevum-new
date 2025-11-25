@@ -8,17 +8,17 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
-      // Geliştirme modunda da PWA'yı aktif et:
       devOptions: {
         enabled: true
       },
       manifest: {
         name: 'Tıraş Randevum',
-        short_name: 'Randevum',
+        short_name: 'Tıraş Randevum', // <-- BURAYI DÜZELTTİK (Eskiden 'Randevum' yazıyordu)
         description: 'Hızlı ve kolay berber randevusu al.',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
+        theme_color: '#0F172A', // Koyu tema rengi
+        background_color: '#0F172A',
         display: 'standalone',
+        orientation: 'portrait', // Sadece dikey modda çalışsın
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -29,6 +29,12 @@ export default defineConfig({
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable' // Android ikonları için gerekli
           }
         ]
       }
