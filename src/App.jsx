@@ -1,11 +1,12 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
-// Sayfalarımızı içe aktarıyoruz
+// Sayfalar
 import Home from './pages/Home'
 import Login from './pages/Login'
 import AdminDashboard from './pages/AdminDashboard'
 import ShopPage from './pages/ShopPage'
+import ShopOwnerDashboard from './pages/ShopOwnerDashboard' // <-- YENİ EKLENDİ
 
 function App() {
   return (
@@ -17,14 +18,17 @@ function App() {
         {/* Giriş Sayfası */}
         <Route path="/login" element={<Login />} />
 
-        {/* Yönetim Paneli (İleride korumalı yapacağız) */}
+        {/* Süper Admin Paneli */}
         <Route path="/admin" element={<AdminDashboard />} />
 
-        {/* Dinamik Salon Sayfası (slug ne gelirse ona göre açılır) */}
+        {/* Dükkan Sahibi Paneli (YENİ) */}
+        <Route path="/shop-panel" element={<ShopOwnerDashboard />} />
+
+        {/* Müşteri Vitrini (Dinamik) */}
         <Route path="/salon/:slug" element={<ShopPage />} />
 
-        {/* Bulunamadı (404) Sayfası - Basitçe */}
-        <Route path="*" element={<h2>Sayfa Bulunamadı</h2>} />
+        {/* 404 */}
+        <Route path="*" element={<div className="text-white text-center mt-20">Sayfa Bulunamadı</div>} />
       </Routes>
     </BrowserRouter>
   )

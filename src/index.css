@@ -8,7 +8,17 @@ html {
 }
 
 body {
-  /* Koyu arka plan ve açık renk yazı */
-  background-color: #111827; 
+  /* Derin uzay siyahı + Hafif mor/mavi ortam ışığı */
+  background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 60%, #000000 100%);
+  background-attachment: fixed; /* Kaydırırken arka plan sabit kalsın */
   color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+}
+
+/* Tarih seçiciyi (Date Picker) koyu temaya uydurma */
+::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.6;
+    cursor: pointer;
 }
