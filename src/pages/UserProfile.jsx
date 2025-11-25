@@ -51,7 +51,7 @@ export default function UserProfile() {
     if (error) alert("Hata: " + error.message); else setMsg("✅ Profiliniz güncellendi!")
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-white">Yükleniyor...</div>
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-white/50 bg-[#0F172A]">Yükleniyor...</div>
 
   return (
     // DÜZELTME: pt-36

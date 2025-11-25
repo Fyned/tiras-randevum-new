@@ -13,12 +13,12 @@ export default defineConfig({
       },
       manifest: {
         name: 'Tıraş Randevum',
-        short_name: 'Tıraş Randevum', // <-- BURAYI DÜZELTTİK (Eskiden 'Randevum' yazıyordu)
+        short_name: 'Tıraş Randevum',
         description: 'Hızlı ve kolay berber randevusu al.',
-        theme_color: '#0F172A', // Koyu tema rengi
+        theme_color: '#0F172A',
         background_color: '#0F172A',
         display: 'standalone',
-        orientation: 'portrait', // Sadece dikey modda çalışsın
+        orientation: 'portrait',
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -34,7 +34,7 @@ export default defineConfig({
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable' // Android ikonları için gerekli
+            purpose: 'any maskable'
           }
         ]
       }

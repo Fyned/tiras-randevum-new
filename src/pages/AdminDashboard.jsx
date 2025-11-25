@@ -61,7 +61,7 @@ export default function AdminDashboard() {
 
   return (
     // DÜZELTME: pt-36
-    <div className="min-h-screen pt-36 pb-12 px-4">
+    <div className="min-h-screen pt-36 pb-12 px-4 bg-[#0F172A] text-white font-sans">
       <Navbar />
       
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto">
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
                       <div className="space-y-3 mb-6 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                          {services.map(s => (<div key={s.id} className="bg-black/20 p-3 rounded-2xl flex justify-between items-center border border-white/5"><span className="text-sm text-gray-200">{s.name}</span> <span className="text-emerald-400 text-xs font-bold bg-emerald-900/20 px-2 py-1 rounded">{s.price}₺</span></div>))}
                       </div>
-                      <form onSubmit={addService} className="space-y-3 mt-auto"><input placeholder="Hizmet Adı" value={serviceName} onChange={e=>setServiceName(e.target.value)} required className="w-full bg-black/20 border border-white/10 text-white p-3 rounded-xl text-sm focus:outline-none focus:border-emerald-500"/><div className="flex gap-3"><input placeholder="Fiyat" type="number" value={servicePrice} onChange={e=>setServicePrice(e.target.value)} required className="w-1/2 bg-black/20 border border-white/10 text-white p-3 rounded-xl text-sm focus:outline-none focus:border-emerald-500"/><input placeholder="Dk" type="number" value={serviceDuration} onChange={e=>setServiceDuration(e.target.value)} required className="w-1/2 bg-black/20 border border-white/10 text-white p-3 rounded-xl text-sm focus:outline-none focus:border-emerald-500"/></div><button className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg">Ekle</button></form>
+                      <form onSubmit={addService} className="space-y-3 mt-auto"><input placeholder="Hizmet Adı" value={serviceName} onChange={e=>setServiceName(e.target.value)} required className="w-full bg-black/20 border border-white/10 text-white p-3 rounded-xl text-sm focus:outline-none focus:border-emerald-500"/><div className="flex gap-3"><input placeholder="Fiyat" type="number" value={servicePrice} onChange={e=>setServicePrice(e.target.value)} required className="w-1/2 bg-black/20 border border-white/10 text-white p-3 rounded-xl text-sm focus:outline-none focus:border-emerald-500"/><input placeholder="Dk" type="number" value={serviceDuration} onChange={e=>setServiceDuration(e.target.value)} required className="w-1/2 bg-black/20 border border-white/10 text-white p-3 rounded-xl text-sm focus:outline-none focus:border-emerald-500"/></div><button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold shadow-lg">Ekle</button></form>
                    </div>
                 </div>
               </motion.div>
