@@ -9,18 +9,21 @@ html {
 }
 
 body {
+  /* Derin uzay siyahı arka plan */
   background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 60%, #000000 100%);
   background-attachment: fixed;
   color: #ffffff;
   font-family: 'Inter', sans-serif;
-  min-height: 100vh;
   
-  /* iPhone Çentik Desteği */
+  /* Dinamik Viewport Yüksekliği (Tarayıcı çubuğu sorununu çözer) */
+  min-height: 100dvh;
+  
+  /* iPhone Çentik Desteği (Standart) */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   
   user-select: none;
-  overflow-x: hidden; /* Yan taşmaları engelle */
+  overflow-x: hidden;
 }
 
 /* Inputlarda zoom'u engelle */
@@ -29,6 +32,7 @@ input, textarea, select {
   font-size: 16px !important; 
 }
 
+/* Özel Kaydırma Çubuğu */
 .custom-scrollbar {
   -webkit-overflow-scrolling: touch;
 }
@@ -43,6 +47,7 @@ input, textarea, select {
   border-radius: 10px;
 }
 
+/* Tarih seçici ikonu */
 ::-webkit-calendar-picker-indicator {
     filter: invert(1);
     opacity: 0.6;
