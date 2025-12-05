@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../context/AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
-import { validatePhone } from '../utils/helpers' 
+import { validatePhone } from '../utils/helpers'
 
 export default function BookingWizard({ shop, barbers, services, onClose }) {
   const { session } = useAuth()
   const [step, setStep] = useState(1)
   
-  // "Tarih seçince direk tarih çıksın" isteği için bugünün tarihini varsayılan yapıyoruz.
+  // Tarih seçince direkt bugün gelsin
   const today = new Date().toISOString().split('T')[0]
   
   const [data, setData] = useState({ 
     service: null, 
     barber: null, 
-    date: today, // Varsayılan olarak bugünü seçili getir
+    date: today, 
     time: null, 
     guestName: '', 
     guestPhone: '' 
@@ -24,59 +24,79 @@ export default function BookingWizard({ shop, barbers, services, onClose }) {
   const [loading, setLoading] = useState(false)
   const [userProfile, setUserProfile] = useState(null)
 
-  // Telefonda "Geri" tuşuna basınca modal kapansın istemiyoruz, bir önceki adıma gitsin istiyoruz.
+  // Geri tuşu yönetimi (Telefonda yanlışlıkla çıkmasın diye)
   useEffect(() => {
     const handleBackButton = (event) => {
       event.preventDefault();
       if (step > 1) {
         setStep(prev => prev - 1);
       } else {
-        onClose(); // İlk adımdayken geri basarsa kapatsın
+        onClose();
       }
     };
-    
-    // Tarayıcı geçmişine sahte bir durum ekleyerek geri tuşunu yakalıyoruz
     window.history.pushState(null, null, window.location.href);
     window.addEventListener('popstate', handleBackButton);
-
     return () => {
       window.removeEventListener('popstate', handleBackButton);
     };
   }, [step, onClose]);
 
-
-  useEffect(() => { if (session) fetchUserProfile() }, [session])
+  // Kullanıcı giriş yapmışsa profilini çek
+  useEffect(() => {
+    if (session) fetchUserProfile()
+  }, [session])
 
   const fetchUserProfile = async () => {
     const { data } = await supabase.from('user_profiles').select('*').eq('auth_user_id', session.user.id).single()
     if (data) setUserProfile(data)
   }
 
+  // Dolu saatleri hesapla
   useEffect(() => { 
     if (step === 3 && data.date && data.barber) fetchBusySlots() 
-  }, [data.date, step, data.barber]) // Berber değişince de saatleri yenile
+  }, [data.date, step, data.barber])
 
   const fetchBusySlots = async () => {
     setLoading(true)
     const start = new Date(data.date + 'T00:00:00').toISOString()
     const end = new Date(data.date + 'T23:59:59').toISOString()
-    const { data: apps } = await supabase.from('appointments').select('start_time').eq('barber_id', data.barber.id).gte('start_time', start).lte('start_time', end).neq('status', 'cancelled')
+    
+    const { data: apps } = await supabase
+      .from('appointments')
+      .select('start_time')
+      .eq('barber_id', data.barber.id)
+      .gte('start_time', start)
+      .lte('start_time', end)
+      .neq('status', 'cancelled')
+      
     setBusySlots(apps ? apps.map(a => new Date(a.start_time).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })) : [])
     setLoading(false)
   }
 
+  // --- RANDEVU KAYDETME VE BİLDİRİM ---
   const handleBooking = async () => {
     let finalPhone = ''
     let finalName = ''
 
+    // 1. Validasyon
     if (session) {
-        if (!userProfile?.phone) { alert("Lütfen önce profilinizden telefon numaranızı ekleyiniz."); return }
+        if (!userProfile?.phone) { 
+            alert("Lütfen önce profilinizden telefon numaranızı ekleyiniz.")
+            // İstersen burada direkt profile yönlendirme de yapabilirsin
+            return 
+        }
         finalPhone = userProfile.phone
         finalName = userProfile.full_name
     } else {
-        if (!data.guestName || !data.guestPhone) { alert("Lütfen adınızı ve telefon numaranızı giriniz."); return }
+        if (!data.guestName || !data.guestPhone) { 
+            alert("Lütfen adınızı ve telefon numaranızı giriniz."); 
+            return 
+        }
         const phoneCheck = validatePhone(data.guestPhone)
-        if (!phoneCheck.isValid) { alert("Geçersiz telefon numarası. (Örn: 5551234567)"); return }
+        if (!phoneCheck.isValid) { 
+            alert("Geçersiz telefon numarası. (Örn: 5551234567)"); 
+            return 
+        }
         finalPhone = phoneCheck.clean
         finalName = data.guestName
     }
@@ -85,23 +105,55 @@ export default function BookingWizard({ shop, barbers, services, onClose }) {
     const end = new Date(start.getTime() + data.service.duration_min * 60000)
     
     const payload = {
-      shop_id: shop.id, barber_id: data.barber.id, service_id: data.service.id,
-      start_time: start.toISOString(), end_time: end.toISOString(),
-      created_by_user: session?.user.id, customer_name: finalName, customer_phone: finalPhone
+      shop_id: shop.id, 
+      barber_id: data.barber.id, 
+      service_id: data.service.id,
+      start_time: start.toISOString(), 
+      end_time: end.toISOString(),
+      created_by_user: session?.user.id, 
+      customer_name: finalName, 
+      customer_phone: finalPhone
     }
     
+    // 2. Randevuyu DB'ye Yaz
     const { error } = await supabase.from('appointments').insert([payload])
     
     if (!error) { 
+        // A. Uygulama İçi Bildirim (Panelde Çan simgesi için)
         if (shop.owner_user_id) {
             await supabase.from('notifications').insert([{
                 user_id: shop.owner_user_id,
                 title: '📅 Yeni Randevu!',
-                message: `${finalName} kişisi, ${data.date} ${data.time} için ${data.service.name} randevusu aldı.`,
+                message: `${finalName} kişisi, ${new Date(data.date).toLocaleDateString('tr-TR')} ${data.time} için ${data.service.name} randevusu aldı.`,
                 link: '/shop-panel'
             }])
         }
-        alert(`Harika! Randevun alındı. 🎉\n\nℹ️ Berberine bildirim gönderildi.`)
+
+        // B. WhatsApp Bildirimi (Supabase Edge Function)
+        // Not: API anahtarlarını Supabase panelinden girdiğinde çalışır.
+        try {
+            // Müşteriye Mesaj
+            await supabase.functions.invoke('send-whatsapp', {
+                body: {
+                    phone: finalPhone,
+                    message: `Sayın ${finalName}, ${shop.name} salonuna ${new Date(data.date).toLocaleDateString('tr-TR')} ${data.time} tarihli randevunuz oluşturulmuştur. Teşekkürler!`
+                }
+            })
+
+            // Berbere Mesaj (Dükkanın telefonu varsa)
+            if (shop.phone) {
+                 await supabase.functions.invoke('send-whatsapp', {
+                    body: {
+                        phone: shop.phone,
+                        message: `YENİ RANDEVU: ${finalName} (${finalPhone}), ${new Date(data.date).toLocaleDateString('tr-TR')} ${data.time} saatine randevu aldı.`
+                    }
+                })
+            }
+        } catch (err) {
+            console.error("WhatsApp gönderilemedi:", err)
+        }
+
+        alert(`Harika! Randevun alındı. 🎉\n\nBilgilendirme mesajı gönderiliyor...`)
         onClose() 
     } else {
         alert(error.message)
@@ -135,7 +187,6 @@ export default function BookingWizard({ shop, barbers, services, onClose }) {
                   <motion.div key={s.id} whileTap={{ scale: 0.98 }} onClick={() => { setData({...data, service: s}); setStep(2) }}
                     className="p-5 bg-white/5 border border-white/5 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/10 hover:border-blue-500/30 transition-all group">
                     <span className="font-medium text-lg text-gray-200 group-hover:text-white">{s.name}</span>
-                    {/* İSTEK: "30 yazan yerde dakka yazsa" */}
                     <div className="text-right">
                         <div className="text-green-400 font-bold bg-green-900/30 px-3 py-1 rounded-lg mb-1">{s.price} ₺</div>
                         <div className="text-xs text-gray-500">{s.duration_min} dakika</div>
@@ -152,7 +203,7 @@ export default function BookingWizard({ shop, barbers, services, onClose }) {
                 <p className="text-gray-400 text-sm font-bold uppercase mb-4">Berber Seçimi</p>
                 {barbers.map(b => (
                   <motion.div key={b.id} whileTap={{ scale: 0.98 }} 
-                    // İSTEK: "Ustayı seçince direk tarih çıksın" (setStep(3) eklendi)
+                    // Usta seçince direkt tarihe geç
                     onClick={() => { setData({...data, barber: b}); setStep(3) }}
                     className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-white/10 transition-all">
                     <div className="w-14 h-14 bg-gray-700 rounded-full overflow-hidden border border-white/10">
@@ -171,7 +222,6 @@ export default function BookingWizard({ shop, barbers, services, onClose }) {
                 <button onClick={() => setStep(2)} className="text-gray-500 mb-4 text-sm hover:text-white">← Geri Dön</button>
                 <h3 className="text-gray-400 text-sm uppercase font-bold mb-4">Tarih ve Saat</h3>
                 
-                {/* Tarih Seçici */}
                 <input type="date" value={data.date} onChange={(e) => setData({...data, date: e.target.value})}
                   className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white mb-6 focus:outline-none focus:border-blue-500 scheme-dark" />
                 

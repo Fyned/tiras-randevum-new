@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // BU KISIM EKLENDİ: Tüm cihazlarda çalışmasını garanti eder
+  build: {
+    target: 'es2015'
+  },
   plugins: [
     react(),
     VitePWA({
