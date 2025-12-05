@@ -8,6 +8,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import ShopPage from './pages/ShopPage'
 import ShopOwnerDashboard from './pages/ShopOwnerDashboard'
 import UserProfile from './pages/UserProfile' // <-- 1. BU EKLENDİ
+import StaffDashboard from './pages/StaffDashboard'
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
 
         {/* Müşteri Vitrini (Dinamik) */}
         <Route path="/salon/:slug" element={<ShopPage />} />
+        <Route path="/staff-panel" element={<StaffDashboard />} />
 
         {/* 404 */}
         <Route path="*" element={<div className="text-white text-center mt-20">Sayfa Bulunamadı</div>} />

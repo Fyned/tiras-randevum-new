@@ -3,11 +3,11 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../supabase'
 import BookingWizard from '../components/BookingWizard'
 import Navbar from '../components/Navbar'
-import ImageViewer from '../components/ImageViewer' // YENİ BİLEŞEN
+import ImageViewer from '../components/ImageViewer' 
+import BarberProfileModal from '../components/BarberProfileModal' // YENİ
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 
-// --- Alt Bileşenler ---
 const ShopHero = memo(({ shop, onBookClick, isFollowing, onToggleFollow, session, onImageClick }) => {
   return (
     <motion.div 
@@ -23,14 +23,7 @@ const ShopHero = memo(({ shop, onBookClick, isFollowing, onToggleFollow, session
       )}
 
       {shop.cover_image_url && (
-          <img 
-            src={shop.cover_image_url} 
-            alt={shop.name} 
-            loading="lazy" 
-            // İSTEK: "Dükkan fotosuna tıklandığı zaman müşteriler fotoyu büyütebilsin"
-            onClick={() => onImageClick(shop.cover_image_url)}
-            className="w-28 h-28 rounded-full mx-auto mb-6 object-cover border-4 border-white/10 shadow-2xl cursor-pointer hover:scale-105 transition-transform" 
-          />
+          <img src={shop.cover_image_url} alt={shop.name} loading="lazy" onClick={() => onImageClick(shop.cover_image_url)} className="w-28 h-28 rounded-full mx-auto mb-6 object-cover border-4 border-white/10 shadow-2xl cursor-pointer hover:scale-105 transition-transform" />
       )}
 
       <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 mb-4">{shop.name}</h1>
@@ -46,23 +39,22 @@ const ShopHero = memo(({ shop, onBookClick, isFollowing, onToggleFollow, session
   )
 });
 
-const BarberList = memo(({ barbers, onImageClick }) => (
+// GÜNCELLEME: onBarberClick eklendi
+const BarberList = memo(({ barbers, onBarberClick }) => (
   <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[30px] p-6 h-full">
     <h2 className="text-2xl font-bold mb-6 text-blue-300">Ekip</h2>
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
       {barbers.map(berber => (
-        <div key={berber.id} className="bg-black/20 p-4 rounded-2xl text-center border border-white/5 hover:bg-white/5 transition-colors">
-          {/* İSTEK: "Ustaya tıklandığı zaman müşteriler fotoyu büyütebilsin" */}
+        <div 
+            key={berber.id} 
+            onClick={() => onBarberClick(berber)} // Tıklayınca Profili Aç
+            className="bg-black/20 p-4 rounded-2xl text-center border border-white/5 hover:bg-white/5 transition-colors cursor-pointer group"
+        >
           {berber.avatar_url ? (
-              <img 
-                src={berber.avatar_url} 
-                alt={berber.full_name} 
-                loading="lazy" 
-                onClick={() => onImageClick(berber.avatar_url)}
-                className="w-14 h-14 mx-auto rounded-full object-cover mb-3 border border-white/10 cursor-pointer hover:border-blue-500 transition-colors" 
-              />
+              <img src={berber.avatar_url} alt={berber.full_name} loading="lazy" className="w-14 h-14 mx-auto rounded-full object-cover mb-3 border border-white/10 group-hover:border-blue-500 transition-colors" />
           ) : (<div className="w-14 h-14 mx-auto bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-2xl mb-3 shadow-lg">👨‍id</div>)}
-          <div className="text-sm font-medium text-gray-200">{berber.full_name}</div>
+          <div className="text-sm font-medium text-gray-200 group-hover:text-white">{berber.full_name}</div>
+          <div className="text-[10px] text-blue-400 mt-1">Profili Gör</div>
         </div>
       ))}
     </div>
@@ -77,7 +69,6 @@ const ServiceList = memo(({ services }) => (
         <div key={service.id} className="flex justify-between items-center p-4 bg-black/20 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
           <div>
               <div className="font-medium text-white">{service.name}</div>
-              {/* İSTEK: "30 yazan yerde dakka yazsa" */}
               <div className="text-xs text-gray-500">{service.duration_min} dk</div>
           </div>
           <div className="text-green-400 font-bold bg-green-900/20 px-3 py-1 rounded-lg">{service.price} ₺</div>
@@ -98,14 +89,7 @@ const PortfolioGrid = memo(({ items, onImageClick }) => {
                   {item.media_type === 'video' ? (
                       <video src={item.media_url} controls className="w-full h-full object-cover" />
                   ) : (
-                      // İSTEK: Galeri fotoları da büyüsün
-                      <img 
-                        src={item.media_url} 
-                        loading="lazy" 
-                        alt="Portfolio" 
-                        onClick={() => onImageClick(item.media_url)}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 cursor-pointer" 
-                      />
+                      <img src={item.media_url} loading="lazy" alt="Portfolio" onClick={() => onImageClick(item.media_url)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 cursor-pointer" />
                   )}
               </div>
           ))}
@@ -114,7 +98,6 @@ const PortfolioGrid = memo(({ items, onImageClick }) => {
   )
 });
 
-// --- ANA BİLEŞEN ---
 export default function ShopPage() {
   const { slug } = useParams()
   const { session } = useAuth()
@@ -124,9 +107,10 @@ export default function ShopPage() {
   const [error, setError] = useState(null)
   const [showWizard, setShowWizard] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
-
-  // Lightbox (Resim Büyütme) State'i
   const [lightboxSrc, setLightboxSrc] = useState(null)
+  
+  // YENİ: Berber Profil Modalı State
+  const [selectedBarber, setSelectedBarber] = useState(null)
 
   useEffect(() => { fetchShopData() }, [slug, session])
 
@@ -137,8 +121,9 @@ export default function ShopPage() {
       if (shopError || !shopData) throw new Error('Salon bulunamadı!')
       
       const [barbersRes, servicesRes, portfolioRes] = await Promise.all([
-        supabase.from('barbers').select('*').eq('shop_id', shopData.id).eq('is_active', true).order('sort_order', {ascending: true}), // İSTEK: Sıralama 'sort_order'
-        supabase.from('services').select('*').eq('shop_id', shopData.id).eq('is_active', true).order('sort_order', {ascending: true}), // İSTEK: Sıralama 'sort_order'
+        // Sıralamayı sort_order'a göre yapıyoruz
+        supabase.from('barbers').select('*').eq('shop_id', shopData.id).eq('is_active', true).order('sort_order', {ascending: true}),
+        supabase.from('services').select('*').eq('shop_id', shopData.id).eq('is_active', true).order('sort_order', {ascending: true}),
         supabase.from('portfolio_items').select('*').eq('shop_id', shopData.id).order('created_at', {ascending: false})
       ])
 
@@ -180,7 +165,10 @@ export default function ShopPage() {
       />
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <BarberList barbers={data.barbers} onImageClick={setLightboxSrc} />
+        <BarberList 
+            barbers={data.barbers} 
+            onBarberClick={setSelectedBarber} // Profili aç
+        />
         <ServiceList services={data.services} />
       </div>
       
@@ -188,8 +176,14 @@ export default function ShopPage() {
       
       {showWizard && (<BookingWizard shop={data.shop} barbers={data.barbers} services={data.services} onClose={() => setShowWizard(false)} />)}
       
-      {/* Lightbox Bileşeni */}
       <ImageViewer src={lightboxSrc} isOpen={!!lightboxSrc} onClose={() => setLightboxSrc(null)} />
+      
+      {/* BERBER PROFİL MODALI */}
+      <BarberProfileModal 
+        barber={selectedBarber} 
+        isOpen={!!selectedBarber} 
+        onClose={() => setSelectedBarber(null)} 
+      />
     </div>
   )
 }
